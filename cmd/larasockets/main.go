@@ -56,8 +56,8 @@ func main() {
 
 	if larasocketConfig.Server.TLS {
 		err = http.ListenAndServeTLS(fmt.Sprintf(":%s", larasocketConfig.Server.Port),
-			larasocketConfig.Server.TLSConfig.CertificatePath,
-			larasocketConfig.Server.TLSConfig.KeyPath,
+			larasocketConfig.Server.Certificate,
+			larasocketConfig.Server.Key,
 			srv,
 		)
 	} else {

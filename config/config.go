@@ -53,31 +53,23 @@ func (a *AppConfig) validate() error {
 }
 
 type ServerConfig struct {
-	Port      string
-	TLS       bool
-	TLSConfig TlsConfig
+	Port        string
+	TLS         bool
+	Key         string
+	Certificate string
 }
 
 func (s ServerConfig) validate() error {
-	if s.TLS {
-		return s.TLSConfig.validate()
+	if !s.TLS {
+		return nil
 	}
 
-	return nil
-}
-
-type TlsConfig struct {
-	KeyPath         string
-	CertificatePath string
-}
-
-func (t TlsConfig) validate() error {
-	if t.KeyPath == "" {
-		return errors.New("certificate key path can not be empty")
+	if s.Key == "" {
+		return errors.New("key path can not be empty")
 	}
 
-	if t.CertificatePath == "" {
-		return errors.New("certificate path can not be empty")
+	if s.Certificate == "" {
+		return errors.New("certificate can not be empty")
 	}
 
 	return nil
