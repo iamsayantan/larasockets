@@ -48,7 +48,6 @@ func (s *Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.logger.Error("error upgrading to websocket connection", zap.String("error", err.Error()))
-		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
 
