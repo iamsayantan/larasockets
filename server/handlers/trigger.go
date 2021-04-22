@@ -61,7 +61,7 @@ func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Reque
 			Data:    bodyParams.Data,
 		}
 
-		if bodyParams.SocketId != "" {
+		if bodyParams.SocketId == "" {
 			channel.Broadcast(payload)
 		} else {
 			channel.BroadcastExcept(payload, bodyParams.SocketId)
