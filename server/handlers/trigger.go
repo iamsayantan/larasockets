@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/messages"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"sort"
@@ -18,6 +19,7 @@ import (
 // URL /apps/{appId}/events
 type TriggerEventsHandler struct {
 	channelManager larasockets.ChannelManager
+	logger         *zap.Logger
 }
 
 type PusherServerEventPayload struct {
@@ -28,29 +30,34 @@ type PusherServerEventPayload struct {
 	SocketId string   `json:"socket_id"`
 }
 
-func NewTriggerEventHandler(cm larasockets.ChannelManager) *TriggerEventsHandler {
-	return &TriggerEventsHandler{channelManager: cm}
+func NewTriggerEventHandler(cm larasockets.ChannelManager, logger *zap.Logger) *TriggerEventsHandler {
+	return &TriggerEventsHandler{channelManager: cm, logger: logger.With(zap.String("handler", "TriggerEventsHandler"))}
 }
 
 func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("received request on HandleEvents")
+
 	appId := chi.URLParam(r, "appId")
 	var bodyParams PusherServerEventPayload
 	err := h.verifySignature(r)
 	if err != nil {
-		log.Printf("error verifying authentication signature: %s", err.Error())
+		h.logger.Error("error verifying authentication signature", zap.String("error", err.Error()))
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(err.Error()))
 	}
 
 	err = json.NewDecoder(r.Body).Decode(&bodyParams)
 	if err != nil {
+		h.logger.Error("error decoding json request.", zap.String("error", err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 
 	for _, channelName := range bodyParams.Channels {
 		channel := h.channelManager.FindChannel(appId, channelName)
 		if channel == nil {
+			h.logger.Info("channel not found", zap.String("channel_name", channelName), zap.String("application_id", appId))
 			log.Printf("channel %s not found for app %s", channelName, appId)
 			continue
 		}
