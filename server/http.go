@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/websocket"
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/events"
@@ -68,6 +69,7 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager) *Server {
 	server.hub = NewHub(logger, cm)
 
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager)
 
