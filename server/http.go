@@ -30,7 +30,6 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.logger.Info("ServeHTTP received request", zap.String("method", r.Method), zap.String("path", r.URL.Path))
 	s.router.ServeHTTP(w, r)
 }
 
@@ -76,9 +75,11 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 	r.Use(middleware.Logger)
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
+	statsHandler := handlers.NewStatsHandler(collector)
 
 	r.Get("/app/{appKey}", server.ServeWS)
 	r.Post("/apps/{appId}/events", triggerHandler.HandleEvents)
+	r.Get("/apps/{appId}/stats", statsHandler.GetStatsForApp)
 
 	server.router = r
 
