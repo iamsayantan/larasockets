@@ -7,6 +7,7 @@ import (
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/events"
 	"github.com/iamsayantan/larasockets/server/handlers"
+	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -24,6 +25,7 @@ type Server struct {
 	router chi.Router
 	hub    *Hub
 
+	collector      statistics.StatsCollector
 	channelManager larasockets.ChannelManager
 }
 
@@ -53,7 +55,7 @@ func (s *Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsConn := NewConnection(s.hub, app, conn, s.logger)
+	wsConn := NewConnection(s.hub, app, conn, s.collector, s.logger)
 	s.hub.register <- wsConn
 
 	s.logger.Info("received new websocket connection", zap.String("connection_id", wsConn.Id()), zap.String("application_id", app.Id()))
@@ -62,17 +64,18 @@ func (s *Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 	wsConn.Send(connResp)
 }
 
-func NewServer(logger *zap.Logger, cm larasockets.ChannelManager) *Server {
+func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector statistics.StatsCollector) *Server {
 	server := &Server{}
 
 	server.channelManager = cm
 	server.logger = logger
+	server.collector = collector
 	server.hub = NewHub(logger, cm)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.logger)
+	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
 
 	r.Get("/app/{appKey}", server.ServeWS)
 	r.Post("/apps/{appId}/events", triggerHandler.HandleEvents)

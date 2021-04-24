@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/messages"
+	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -19,7 +20,9 @@ import (
 // URL /apps/{appId}/events
 type TriggerEventsHandler struct {
 	channelManager larasockets.ChannelManager
-	logger         *zap.Logger
+	collector      statistics.StatsCollector
+
+	logger *zap.Logger
 }
 
 type PusherServerEventPayload struct {
@@ -30,8 +33,8 @@ type PusherServerEventPayload struct {
 	SocketId string   `json:"socket_id"`
 }
 
-func NewTriggerEventHandler(cm larasockets.ChannelManager, logger *zap.Logger) *TriggerEventsHandler {
-	return &TriggerEventsHandler{channelManager: cm, logger: logger.With(zap.String("handler", "TriggerEventsHandler"))}
+func NewTriggerEventHandler(cm larasockets.ChannelManager, collector statistics.StatsCollector, logger *zap.Logger) *TriggerEventsHandler {
+	return &TriggerEventsHandler{channelManager: cm, logger: logger.With(zap.String("handler", "TriggerEventsHandler")), collector: collector}
 }
 
 func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +56,8 @@ func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Reque
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+
+	h.collector.HandleApiMessage(appId)
 
 	for _, channelName := range bodyParams.Channels {
 		channel := h.channelManager.FindChannel(appId, channelName)

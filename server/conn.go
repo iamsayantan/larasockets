@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/messages"
+	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
 	"math/rand"
 	"strconv"
@@ -36,7 +37,8 @@ type Connection struct {
 	// id is the unique identifier for this connection.
 	id string
 	// app represents the application to which connection was made.
-	app *larasockets.Application
+	app       *larasockets.Application
+	collector statistics.StatsCollector
 
 	logger        *zap.Logger
 	websocketConn *websocket.Conn
@@ -49,7 +51,7 @@ type Connection struct {
 }
 
 // NewConnection generates a new Connection instance from the raw websocket connection.
-func NewConnection(hub *Hub, app *larasockets.Application, conn *websocket.Conn, logger *zap.Logger) larasockets.Connection {
+func NewConnection(hub *Hub, app *larasockets.Application, conn *websocket.Conn, collector statistics.StatsCollector, logger *zap.Logger) larasockets.Connection {
 	connId := generateIdForConnection()
 	newConn := &Connection{
 		id:            connId,
@@ -64,6 +66,7 @@ func NewConnection(hub *Hub, app *larasockets.Application, conn *websocket.Conn,
 	go newConn.Receive()
 	go newConn.writePump()
 
+	newConn.collector.HandleConnection(app.Id())
 	return newConn
 }
 
@@ -80,6 +83,7 @@ func (c *Connection) Send(data interface{}) {
 		return
 	}
 
+	c.collector.HandleWebsocketMessage(c.App().Id())
 	c.sendCh <- message
 }
 
@@ -188,6 +192,7 @@ func (c *Connection) Close() {
 	c.hub.RemoveConnection(c)
 	c.closeCh <- true
 	_ = c.websocketConn.Close()
+	c.collector.HandleDisconnection(c.App().Id())
 }
 
 func (c *Connection) App() *larasockets.Application {
