@@ -12,23 +12,6 @@ func NewStatistic(appId string) *Statistic {
 	return &Statistic{appId: appId}
 }
 
-/*
-func (s *Statistic) SetConcurrentConnection(connectionCount int) {
-	s.concurrentConnections = connectionCount
-}
-
-func (s *Statistic) SetPeakConnections(peakConnectionCount int) {
-	s.peakConnections = peakConnectionCount
-}
-
-func (s *Statistic) SetWebsocketMessageCount(websocketMessageCount int) {
-	s.websocketMessagesCount = websocketMessageCount
-}
-
-func (s *Statistic) SetApiMessageCount(apiMessageCount int) {
-	s.apiMessagesCount = apiMessageCount
-}
-*/
 func (s *Statistic) HandleNewConnection() {
 	s.concurrentConnections++
 
