@@ -1,6 +1,8 @@
 package channels
 
-import "github.com/iamsayantan/larasockets"
+import (
+	"github.com/iamsayantan/larasockets"
+)
 
 type publicChannel struct {
 	name        string

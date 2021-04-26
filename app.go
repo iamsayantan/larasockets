@@ -85,6 +85,7 @@ func NewApplication(appConfig config.AppConfig) *Application {
 		id:        appConfig.ID,
 		appKey:    appConfig.Key,
 		appSecret: appConfig.Secret,
+		appName:   appConfig.Name,
 	}
 
 	if appConfig.Capacity > 0 {

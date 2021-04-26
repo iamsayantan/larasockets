@@ -3,10 +3,12 @@ package server
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	"github.com/gorilla/websocket"
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/events"
 	"github.com/iamsayantan/larasockets/server/handlers"
+	"github.com/iamsayantan/larasockets/server/handlers/middlewares"
 	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
 	"net/http"
@@ -71,16 +73,35 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 	server.collector = collector
 	server.hub = NewHub(logger, cm)
 
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+	})
+
 	r := chi.NewRouter()
+
 	r.Use(middleware.Logger)
+	r.Use(corsHandler.Handler)
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
+	dashboardHandler := handlers.NewDashboardHandler(server.channelManager.AppManager())
 	statsHandler := handlers.NewStatsHandler(collector)
+
+	authMiddleware := middlewares.NewAuthMiddleware(cm.AppManager())
 
 	r.Get("/app/{appKey}", server.ServeWS)
 	r.Post("/apps/{appId}/events", triggerHandler.HandleEvents)
 	r.Get("/apps/{appId}/stats", statsHandler.GetStatsForApp)
 
+	// Authenticated routes are grouped here.
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware.Handler)
+		r.Post("/apps/{appId}/authorize-channels", dashboardHandler.AuthorizeChannelRequest)
+	})
+
+	r.Get("/dashboard/apps", dashboardHandler.AllApps)
+	r.Post("/dashboard/apps/authorize", dashboardHandler.AuthorizeConnectionRequest)
 	server.router = r
 
 	return server

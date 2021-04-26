@@ -8,6 +8,7 @@ import (
 	"github.com/iamsayantan/larasockets/config"
 	"github.com/iamsayantan/larasockets/server"
 	"github.com/iamsayantan/larasockets/statistics/collectors"
+	"github.com/iamsayantan/larasockets/statistics/listeners"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"net/http"
@@ -51,7 +52,9 @@ func main() {
 
 	appManager := app_managers.NewConfigManager(larasocketConfig.Apps)
 	channelManager := channel_managers.NewLocalManager(appManager, logger)
+
 	statsCollector := collectors.NewMemoryCollector()
+	statsCollector.RegisterStatsListener(listeners.NewConcurrentConnectionListener(channelManager))
 
 	srv := server.NewServer(logger, channelManager, statsCollector)
 	logger.Info("starting larasockets server", zap.String("port", larasocketConfig.Server.Port))

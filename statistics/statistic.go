@@ -12,6 +12,26 @@ func NewStatistic(appId string) *Statistic {
 	return &Statistic{appId: appId}
 }
 
+func (s *Statistic) AppId() string {
+	return s.appId
+}
+
+func (s *Statistic) ConcurrentConnections() int {
+	return s.concurrentConnections
+}
+
+func (s *Statistic) PeakConnections() int {
+	return s.peakConnections
+}
+
+func (s *Statistic) WebsocketMessages() int {
+	return s.websocketMessagesCount
+}
+
+func (s *Statistic) ApiMessages() int {
+	return s.apiMessagesCount
+}
+
 func (s *Statistic) HandleNewConnection() {
 	s.concurrentConnections++
 

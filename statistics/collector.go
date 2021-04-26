@@ -27,4 +27,14 @@ type StatsCollector interface {
 
 	// GetAppStatistics will return the current stored statistics for the appId.
 	GetAppStatistics(appId string) Statistic
+
+	// RegisterStatsListener will register a listener to listen for all the change in statistics
+	// for an app.
+	RegisterStatsListener(listener StatsCollectionListener)
+}
+
+// StatsCollectionListener interface should be implemented by all the types which want to
+// listen for the changes in stats.
+type StatsCollectionListener interface {
+	ListenStatChanged(stat Statistic)
 }

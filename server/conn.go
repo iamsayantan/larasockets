@@ -84,7 +84,7 @@ func (c *Connection) Send(data interface{}) {
 		return
 	}
 
-	c.collector.HandleWebsocketMessage(c.App().Id())
+	// c.collector.HandleWebsocketMessage(c.App().Id())
 	c.sendCh <- message
 }
 
