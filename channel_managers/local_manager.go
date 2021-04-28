@@ -60,12 +60,17 @@ func (cm *localChannelManager) FindOrCreateChannel(appId, channelName string) la
 		return existingChannel
 	}
 
-	// make the empty map to hold the channels for the app id
-	cm.channels[appId] = make(map[string]larasockets.Channel)
+	// determine if a channels map already exists for this app, if no channel map exists,
+	// we need to make a new map for it.
+	existingChannelsForApp, ok := cm.channels[appId]
+	if !ok {
+		existingChannelsForApp = make(map[string]larasockets.Channel)
+	}
 
 	newChannel := channels.NewChannel(channelName)
-	cm.channels[appId][channelName] = newChannel
+	existingChannelsForApp[channelName] = newChannel
 
+	cm.channels[appId] = existingChannelsForApp
 	return newChannel
 }
 

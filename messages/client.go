@@ -9,7 +9,7 @@ type pusherChannelClientMessage struct {
 }
 
 func (p *pusherChannelClientMessage) Respond() {
-	panic("implement me")
+	//panic("implement me")
 }
 
 func newPusherClientMessage(conn larasockets.Connection, cm larasockets.ChannelManager, payload PusherIncomingMessagePayload) larasockets.PusherMessage {

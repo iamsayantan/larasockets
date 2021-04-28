@@ -2,14 +2,18 @@ package collectors
 
 import (
 	"github.com/iamsayantan/larasockets/statistics"
+	"time"
 )
 
 // NewMemoryCollector returns a new stats collector that stores the data in memory.
 func NewMemoryCollector() statistics.StatsCollector {
-	return &memoryCollector{
+	collector := &memoryCollector{
 		stats:     make(map[string]*statistics.Statistic),
 		listeners: make([]statistics.StatsCollectionListener, 0),
 	}
+
+	go collector.sendPeriodicUpdatesToListeners()
+	return collector
 }
 
 type memoryCollector struct {
@@ -19,22 +23,18 @@ type memoryCollector struct {
 
 func (c *memoryCollector) HandleWebsocketMessage(appId string) {
 	c.findOrMake(appId).HandleNewWebsocketMessage()
-	c.sendUpdatedStatToListeners(appId)
 }
 
 func (c *memoryCollector) HandleApiMessage(appId string) {
 	c.findOrMake(appId).HandleNewApiMessage()
-	c.sendUpdatedStatToListeners(appId)
 }
 
 func (c *memoryCollector) HandleConnection(appId string) {
 	c.findOrMake(appId).HandleNewConnection()
-	c.sendUpdatedStatToListeners(appId)
 }
 
 func (c *memoryCollector) HandleDisconnection(appId string) {
 	c.findOrMake(appId).HandleDisconnection()
-	c.sendUpdatedStatToListeners(appId)
 }
 
 func (c *memoryCollector) Flush() {
@@ -59,10 +59,21 @@ func (c *memoryCollector) RegisterStatsListener(listener statistics.StatsCollect
 	c.listeners = append(c.listeners, listener)
 }
 
-func (c *memoryCollector) sendUpdatedStatToListeners(appId string) {
-	stats := c.findOrMake(appId)
-	for _, listener := range c.listeners {
-		listener.ListenStatChanged(*stats)
+func (c *memoryCollector) sendUpdatedStatToListeners() {
+	for _, stat := range c.stats {
+		for _, listener := range c.listeners {
+			listener.ListenStatChanged(*stat)
+		}
+	}
+}
+
+func (c *memoryCollector) sendPeriodicUpdatesToListeners() {
+	ticker := time.NewTicker(time.Second * 5)
+	for {
+		select {
+		case <-ticker.C:
+			c.sendUpdatedStatToListeners()
+		}
 	}
 }
 
