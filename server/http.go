@@ -85,7 +85,7 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 	r.Use(corsHandler.Handler)
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
-	dashboardHandler := handlers.NewDashboardHandler(server.channelManager.AppManager())
+	dashboardHandler := handlers.NewDashboardHandler(server.channelManager)
 	statsHandler := handlers.NewStatsHandler(collector)
 
 	authMiddleware := middlewares.NewAuthMiddleware(cm.AppManager())
@@ -98,6 +98,7 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware.Handler)
 		r.Post("/apps/{appId}/authorize-channels", dashboardHandler.AuthorizeChannelRequest)
+		r.Post("/apps/{appId}/trigger-events", dashboardHandler.TriggerEvent)
 	})
 
 	r.Get("/dashboard/apps", dashboardHandler.AllApps)

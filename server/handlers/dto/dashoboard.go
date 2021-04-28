@@ -23,3 +23,9 @@ type ApplicationAuthorizationClaims struct {
 	jwt.StandardClaims
 	AppId string
 }
+
+type DashboardEventTriggerRequest struct {
+	Event   string `json:"event"`
+	Channel string `json:"channel"`
+	Data    string `json:"data"`
+}

@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/iamsayantan/larasockets"
+	"github.com/iamsayantan/larasockets/messages"
 	"github.com/iamsayantan/larasockets/server/handlers/dto"
 	"github.com/iamsayantan/larasockets/server/handlers/middlewares"
 	"github.com/iamsayantan/larasockets/server/rendering"
@@ -13,12 +15,13 @@ import (
 	"time"
 )
 
-func NewDashboardHandler(appManager larasockets.ApplicationManager) *DashboardHandler {
-	return &DashboardHandler{appManager: appManager}
+func NewDashboardHandler(cm larasockets.ChannelManager) *DashboardHandler {
+	return &DashboardHandler{appManager: cm.AppManager(), channelManager: cm}
 }
 
 type DashboardHandler struct {
-	appManager larasockets.ApplicationManager
+	appManager     larasockets.ApplicationManager
+	channelManager larasockets.ChannelManager
 }
 
 func (h *DashboardHandler) AllApps(w http.ResponseWriter, r *http.Request) {
@@ -105,4 +108,28 @@ func (h *DashboardHandler) AuthorizeChannelRequest(w http.ResponseWriter, r *htt
 	}
 
 	_, _ = w.Write(response)
+}
+
+func (h *DashboardHandler) TriggerEvent(w http.ResponseWriter, r *http.Request) {
+	appId := middlewares.GetAuthenticatedAppIdFromContext(r.Context())
+
+	var triggerEventRequest dto.DashboardEventTriggerRequest
+	err := json.NewDecoder(r.Body).Decode(&triggerEventRequest)
+	if err != nil {
+		rendering.RenderError(w, fmt.Sprintf("invalid request: %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	channel := h.channelManager.FindChannel(appId, triggerEventRequest.Channel)
+	if channel == nil {
+		return
+	}
+
+	messagePayload := messages.PusherEventPayload{
+		Channel: triggerEventRequest.Channel,
+		Event:   triggerEventRequest.Event,
+		Data:    triggerEventRequest.Data,
+	}
+
+	channel.Broadcast(messagePayload)
 }
