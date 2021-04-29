@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/iamsayantan/larasockets"
+	"github.com/iamsayantan/larasockets/events"
 	"github.com/iamsayantan/larasockets/messages"
 	"github.com/iamsayantan/larasockets/server/handlers/dto"
 	"github.com/iamsayantan/larasockets/server/handlers/middlewares"
@@ -120,7 +121,7 @@ func (h *DashboardHandler) TriggerEvent(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	channel := h.channelManager.FindChannel(appId, triggerEventRequest.Channel)
+	channel := h.channelManager.FindOrCreateChannel(appId, triggerEventRequest.Channel)
 	if channel == nil {
 		return
 	}
@@ -130,6 +131,14 @@ func (h *DashboardHandler) TriggerEvent(w http.ResponseWriter, r *http.Request) 
 		Event:   triggerEventRequest.Event,
 		Data:    triggerEventRequest.Data,
 	}
+
+	events.LogEvent(h.channelManager, events.ApiMessage, events.DashboardLogDetails{
+		AppId:        appId,
+		ChannelName:  triggerEventRequest.Channel,
+		EventName:    triggerEventRequest.Event,
+		ConnectionId: "",
+		EventPayload: triggerEventRequest.Data,
+	})
 
 	channel.Broadcast(messagePayload)
 }
