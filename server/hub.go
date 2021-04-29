@@ -45,10 +45,6 @@ func (h *Hub) run() {
 			h.connections[conn.Id()] = conn
 		case conn := <-h.unregister:
 			if _, ok := h.connections[conn.Id()]; ok {
-				h.logger.Info("removing connection from the hub",
-					zap.String("connection_id", conn.Id()),
-					zap.String("application_id", conn.App().Id()),
-				)
 				delete(h.connections, conn.Id())
 			}
 		}

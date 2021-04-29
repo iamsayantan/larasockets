@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi"
 	"github.com/iamsayantan/larasockets"
+	"github.com/iamsayantan/larasockets/events"
 	"github.com/iamsayantan/larasockets/messages"
 	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
@@ -72,6 +73,14 @@ func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Reque
 			Channel: channelName,
 			Data:    bodyParams.Data,
 		}
+
+		events.LogEvent(h.channelManager, events.ApiMessage, events.DashboardLogDetails{
+			AppId:        appId,
+			ChannelName:  channelName,
+			EventName:    bodyParams.Name,
+			ConnectionId: "",
+			EventPayload: bodyParams.Data,
+		})
 
 		if bodyParams.SocketId == "" {
 			channel.Broadcast(payload)

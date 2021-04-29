@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/iamsayantan/larasockets"
+	"github.com/iamsayantan/larasockets/events"
 	"github.com/iamsayantan/larasockets/messages"
 	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
@@ -68,6 +69,14 @@ func NewConnection(hub *Hub, app *larasockets.Application, conn *websocket.Conn,
 	go newConn.writePump()
 
 	newConn.collector.HandleConnection(app.Id())
+	events.LogEvent(hub.channelManger, events.Connected, events.DashboardLogDetails{
+		AppId:        newConn.App().Id(),
+		ChannelName:  "",
+		EventName:    "",
+		ConnectionId: newConn.Id(),
+		EventPayload: "",
+	})
+
 	return newConn
 }
 
@@ -193,7 +202,15 @@ func (c *Connection) Close() {
 	c.hub.RemoveConnection(c)
 	c.closeCh <- true
 	_ = c.websocketConn.Close()
+
 	c.collector.HandleDisconnection(c.App().Id())
+	events.LogEvent(c.hub.channelManger, events.Disconnected, events.DashboardLogDetails{
+		AppId:        c.App().Id(),
+		ChannelName:  "",
+		EventName:    "",
+		ConnectionId: c.Id(),
+		EventPayload: "",
+	})
 }
 
 func (c *Connection) App() *larasockets.Application {
