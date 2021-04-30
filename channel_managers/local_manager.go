@@ -54,6 +54,27 @@ func (cm *localChannelManager) AllChannels(appId string) []larasockets.Channel {
 	return c
 }
 
+func (cm *localChannelManager) ConcurrentConnectionsForApp(appId string) int {
+	activeChannels := cm.AllChannels(appId)
+	if len(activeChannels) == 0 {
+		return 0
+	}
+
+	connectionIds := make([]string, 0)
+	connectionKeys := make(map[string]bool, 0)
+
+	for _, c := range activeChannels {
+		for _, conn := range c.Connections() {
+			if _, ok := connectionKeys[conn.Id()]; !ok {
+				connectionIds = append(connectionIds, conn.Id())
+				connectionKeys[conn.Id()] = true
+			}
+		}
+	}
+
+	return len(connectionIds)
+}
+
 func (cm *localChannelManager) FindOrCreateChannel(appId, channelName string) larasockets.Channel {
 	existingChannel := cm.FindChannel(appId, channelName)
 	if existingChannel != nil {

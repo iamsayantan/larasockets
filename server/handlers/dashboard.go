@@ -10,19 +10,21 @@ import (
 	"github.com/iamsayantan/larasockets/server/handlers/dto"
 	"github.com/iamsayantan/larasockets/server/handlers/middlewares"
 	"github.com/iamsayantan/larasockets/server/rendering"
+	"github.com/iamsayantan/larasockets/statistics"
 	"github.com/pusher/pusher-http-go/v5"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-func NewDashboardHandler(cm larasockets.ChannelManager) *DashboardHandler {
-	return &DashboardHandler{appManager: cm.AppManager(), channelManager: cm}
+func NewDashboardHandler(cm larasockets.ChannelManager, c statistics.StatsCollector) *DashboardHandler {
+	return &DashboardHandler{appManager: cm.AppManager(), channelManager: cm, collector: c}
 }
 
 type DashboardHandler struct {
 	appManager     larasockets.ApplicationManager
 	channelManager larasockets.ChannelManager
+	collector      statistics.StatsCollector
 }
 
 func (h *DashboardHandler) AllApps(w http.ResponseWriter, r *http.Request) {
@@ -139,6 +141,8 @@ func (h *DashboardHandler) TriggerEvent(w http.ResponseWriter, r *http.Request) 
 		ConnectionId: "",
 		EventPayload: triggerEventRequest.Data,
 	})
+
+	h.collector.HandleApiMessage(appId)
 
 	channel.Broadcast(messagePayload)
 }

@@ -39,8 +39,6 @@ func NewTriggerEventHandler(cm larasockets.ChannelManager, collector statistics.
 }
 
 func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("received request on HandleEvents")
-
 	appId := chi.URLParam(r, "appId")
 	var bodyParams PusherServerEventPayload
 	err := h.verifySignature(r)

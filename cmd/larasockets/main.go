@@ -9,8 +9,11 @@ import (
 	"github.com/iamsayantan/larasockets/server"
 	"github.com/iamsayantan/larasockets/statistics/collectors"
 	"github.com/iamsayantan/larasockets/statistics/listeners"
+	"github.com/iamsayantan/larasockets/statistics/stores"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -50,10 +53,23 @@ func main() {
 		return
 	}
 
+	dsn := "root:12345@tcp(127.0.0.1:3306)/larasockets?charset=utf8mb4&parseTime=true"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic(fmt.Sprintf("Could not connect to the database: %s", err.Error()))
+	}
+
+	err = db.AutoMigrate(&stores.LarasocketsStatistic{})
+	if err != nil {
+		logger.Error("error migrating the statistics table.", zap.String("error", err.Error()))
+		return
+	}
+
 	appManager := app_managers.NewConfigManager(larasocketConfig.Apps)
 	channelManager := channel_managers.NewLocalManager(appManager, logger)
 
-	statsCollector := collectors.NewMemoryCollector()
+	statsStore := stores.NewDatabaseStorage(db)
+	statsCollector := collectors.NewMemoryCollector(channelManager, statsStore)
 	statsCollector.RegisterStatsListener(listeners.NewConcurrentConnectionListener(channelManager))
 
 	srv := server.NewServer(logger, channelManager, statsCollector)

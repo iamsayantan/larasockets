@@ -31,6 +31,9 @@ type StatsCollector interface {
 	// RegisterStatsListener will register a listener to listen for all the change in statistics
 	// for an app.
 	RegisterStatsListener(listener StatsCollectionListener)
+
+	// DumpToStorage will dump all the available stats to some permanent storage.
+	DumpToStorage(store StatsStorage)
 }
 
 // StatsCollectionListener interface should be implemented by all the types which want to

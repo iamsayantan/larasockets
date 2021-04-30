@@ -12,6 +12,9 @@ type ChannelManager interface {
 	// AllChannels will return all the channels currently in the manager.
 	AllChannels(appId string) []Channel
 
+	// ConcurrentConnectionsForApp returns number of unique connections made to the app across all channels.
+	ConcurrentConnectionsForApp(appId string) int
+
 	// FindOrCreateChannel creates a new Channel for the application if it doesn't find it.
 	FindOrCreateChannel(appId, channelName string) Channel
 

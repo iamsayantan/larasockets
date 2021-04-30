@@ -1,24 +1,45 @@
 package collectors
 
 import (
+	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/statistics"
 	"time"
 )
 
 // NewMemoryCollector returns a new stats collector that stores the data in memory.
-func NewMemoryCollector() statistics.StatsCollector {
+func NewMemoryCollector(cm larasockets.ChannelManager, store statistics.StatsStorage) statistics.StatsCollector {
 	collector := &memoryCollector{
 		stats:     make(map[string]*statistics.Statistic),
 		listeners: make([]statistics.StatsCollectionListener, 0),
+		store:     store,
+		cm:        cm,
 	}
 
 	go collector.sendPeriodicUpdatesToListeners()
+	go collector.periodicDumpToStorage()
+
 	return collector
 }
 
 type memoryCollector struct {
 	stats     map[string]*statistics.Statistic
 	listeners []statistics.StatsCollectionListener
+	store     statistics.StatsStorage
+	cm        larasockets.ChannelManager
+}
+
+func (c *memoryCollector) DumpToStorage(store statistics.StatsStorage) {
+	for _, stat := range c.stats {
+		if stat.CanRemoveStatistics() {
+			delete(c.stats, stat.AppId())
+			return
+		}
+
+		store.Store(*stat)
+
+		concurrentConnections := c.cm.ConcurrentConnectionsForApp(stat.AppId())
+		stat.Reset(concurrentConnections)
+	}
 }
 
 func (c *memoryCollector) HandleWebsocketMessage(appId string) {
@@ -73,6 +94,16 @@ func (c *memoryCollector) sendPeriodicUpdatesToListeners() {
 		select {
 		case <-ticker.C:
 			c.sendUpdatedStatToListeners()
+		}
+	}
+}
+
+func (c *memoryCollector) periodicDumpToStorage() {
+	ticker := time.NewTicker(time.Minute * 5)
+	for {
+		select {
+		case <-ticker.C:
+			c.DumpToStorage(c.store)
 		}
 	}
 }

@@ -52,9 +52,22 @@ func (s *Statistic) HandleNewApiMessage() {
 	s.apiMessagesCount++
 }
 
-func (s *Statistic) Reset() {
-	s2 := NewStatistic(s.appId)
-	*s = *s2
+func (s *Statistic) Reset(concurrentConnections int) {
+	s.concurrentConnections = concurrentConnections
+	s.apiMessagesCount = 0
+	s.websocketMessagesCount = 0
+
+	if concurrentConnections > 0 {
+		s.peakConnections = concurrentConnections
+	} else {
+		s.peakConnections = 0
+	}
+}
+
+// CanRemoveStatistics checks if there is any current activity in for the app,
+// if there is no current activity then, this statistics can be safely removed.
+func (s *Statistic) CanRemoveStatistics() bool {
+	return s.peakConnections == 0 && s.concurrentConnections == 0
 }
 
 func (s *Statistic) GetCurrentSnapshot() map[string]interface{} {
