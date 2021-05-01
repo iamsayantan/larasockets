@@ -4,4 +4,5 @@ package statistics
 // the statistics data.
 type StatsStorage interface {
 	Store(statistic Statistic)
+	DailyStatForApp(appId string) *Statistic
 }

@@ -12,6 +12,16 @@ func NewStatistic(appId string) *Statistic {
 	return &Statistic{appId: appId}
 }
 
+func NewStatisticWithData(appId string, concurrentConnections, peakConnections, websocketMessages, apiMessages int) *Statistic {
+	return &Statistic{
+		appId:                  appId,
+		concurrentConnections:  concurrentConnections,
+		peakConnections:        peakConnections,
+		websocketMessagesCount: websocketMessages,
+		apiMessagesCount:       apiMessages,
+	}
+}
+
 func (s *Statistic) AppId() string {
 	return s.appId
 }

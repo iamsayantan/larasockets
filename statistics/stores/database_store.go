@@ -34,3 +34,22 @@ func (m *dbStore) Store(statistic statistics.Statistic) {
 
 	m.db.Create(&statToStore)
 }
+
+func (m *dbStore) DailyStatForApp(appId string) *statistics.Statistic {
+	var stats LarasocketsStatistic
+	err := m.db.Select("MAX(peak_connections) AS peak_connections, SUM(websocket_messages) AS websocket_messages, SUM(api_messages) AS api_messages").
+		Where("app_id = ?", appId).
+		First(&stats).
+		Error
+
+	if err != nil {
+		return nil
+	}
+
+	return statistics.NewStatisticWithData(appId, 0, stats.PeakConnections, stats.WebsocketMessages, stats.ApiMessages)
+}
+
+func (m *dbStore) StatsByTimeRange(appId string, startTime time.Time, endTime time.Time) {
+	var stats []LarasocketsStatistic
+	m.db.Where("app_id = ?", appId).Where("created_at > ?", startTime).Where("created_at < ?", endTime).Order("created_at DESC").Find(&stats)
+}

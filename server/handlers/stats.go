@@ -2,20 +2,27 @@ package handlers
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/iamsayantan/larasockets/server/handlers/dto"
 	"github.com/iamsayantan/larasockets/server/rendering"
 	"github.com/iamsayantan/larasockets/statistics"
 	"net/http"
 )
 
-func NewStatsHandler(collector statistics.StatsCollector) *StatsHandler {
-	return &StatsHandler{collector: collector}
+func NewStatsHandler(store statistics.StatsStorage) *StatsHandler {
+	return &StatsHandler{statsStore: store}
 }
 
 type StatsHandler struct {
-	collector statistics.StatsCollector
+	statsStore statistics.StatsStorage
 }
 
-func (h *StatsHandler) GetStatsForApp(w http.ResponseWriter, r *http.Request) {
-	stat := h.collector.GetAppStatistics(chi.URLParam(r, "appId"))
-	rendering.RenderSuccessWithData(w, "success", http.StatusOK, stat.GetCurrentSnapshot())
+func (h *StatsHandler) GetStatForToday(w http.ResponseWriter, r *http.Request) {
+	stat := h.statsStore.DailyStatForApp(chi.URLParam(r, "appId"))
+	resp := dto.DailyStatSnapshot{
+		PeakConnections:   stat.PeakConnections(),
+		ApiMessages:       stat.ApiMessages(),
+		WebsocketMessages: stat.WebsocketMessages(),
+	}
+
+	rendering.RenderSuccessWithData(w, "success", http.StatusOK, resp)
 }

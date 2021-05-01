@@ -72,7 +72,7 @@ func main() {
 	statsCollector := collectors.NewMemoryCollector(channelManager, statsStore)
 	statsCollector.RegisterStatsListener(listeners.NewConcurrentConnectionListener(channelManager))
 
-	srv := server.NewServer(logger, channelManager, statsCollector)
+	srv := server.NewServer(logger, channelManager, statsCollector, statsStore)
 	logger.Info("starting larasockets server", zap.String("port", larasocketConfig.Server.Port))
 
 	if larasocketConfig.Server.TLS {

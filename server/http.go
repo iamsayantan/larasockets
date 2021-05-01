@@ -27,6 +27,7 @@ type Server struct {
 	router chi.Router
 	hub    *Hub
 
+	statsStore     statistics.StatsStorage
 	collector      statistics.StatsCollector
 	channelManager larasockets.ChannelManager
 }
@@ -65,12 +66,13 @@ func (s *Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 	wsConn.Send(connResp)
 }
 
-func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector statistics.StatsCollector) *Server {
+func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector statistics.StatsCollector, store statistics.StatsStorage) *Server {
 	server := &Server{}
 
 	server.channelManager = cm
 	server.logger = logger
 	server.collector = collector
+	server.statsStore = store
 	server.hub = NewHub(logger, cm)
 
 	corsHandler := cors.New(cors.Options{
@@ -86,19 +88,19 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
 	dashboardHandler := handlers.NewDashboardHandler(server.channelManager, server.collector)
-	statsHandler := handlers.NewStatsHandler(collector)
+	statsHandler := handlers.NewStatsHandler(store)
 
 	authMiddleware := middlewares.NewAuthMiddleware(cm.AppManager())
 
 	r.Get("/app/{appKey}", server.ServeWS)
 	r.Post("/apps/{appId}/events", triggerHandler.HandleEvents)
-	r.Get("/apps/{appId}/stats", statsHandler.GetStatsForApp)
 
 	// Authenticated routes are grouped here.
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware.Handler)
 		r.Post("/apps/{appId}/authorize-channels", dashboardHandler.AuthorizeChannelRequest)
 		r.Post("/apps/{appId}/trigger-events", dashboardHandler.TriggerEvent)
+		r.Get("/apps/{appId}/daily-stats", statsHandler.GetStatForToday)
 	})
 
 	r.Get("/dashboard/apps", dashboardHandler.AllApps)
