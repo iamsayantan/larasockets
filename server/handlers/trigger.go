@@ -12,7 +12,6 @@ import (
 	"github.com/iamsayantan/larasockets/messages"
 	"github.com/iamsayantan/larasockets/statistics"
 	"go.uber.org/zap"
-	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -62,7 +61,6 @@ func (h *TriggerEventsHandler) HandleEvents(w http.ResponseWriter, r *http.Reque
 		channel := h.channelManager.FindChannel(appId, channelName)
 		if channel == nil {
 			h.logger.Info("channel not found", zap.String("channel_name", channelName), zap.String("application_id", appId))
-			log.Printf("channel %s not found for app %s", channelName, appId)
 			continue
 		}
 
