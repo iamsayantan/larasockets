@@ -39,6 +39,8 @@ func (m *dbStore) DailyStatForApp(appId string) *statistics.Statistic {
 	var stats LarasocketsStatistic
 	err := m.db.Select("MAX(peak_connections) AS peak_connections, SUM(websocket_messages) AS websocket_messages, SUM(api_messages) AS api_messages").
 		Where("app_id = ?", appId).
+		Where("created_at >= CURDATE()").
+		Where("created_at < CURDATE() + INTERVAL 1 DAY").
 		First(&stats).
 		Error
 
@@ -49,7 +51,14 @@ func (m *dbStore) DailyStatForApp(appId string) *statistics.Statistic {
 	return statistics.NewStatisticWithData(appId, 0, stats.PeakConnections, stats.WebsocketMessages, stats.ApiMessages)
 }
 
-func (m *dbStore) StatsByTimeRange(appId string, startTime time.Time, endTime time.Time) {
+func (m *dbStore) StatsByTimeRange(appId string, startTime time.Time, endTime time.Time) map[int64]*statistics.Statistic {
 	var stats []LarasocketsStatistic
-	m.db.Where("app_id = ?", appId).Where("created_at > ?", startTime).Where("created_at < ?", endTime).Order("created_at DESC").Find(&stats)
+	statsResponse := make(map[int64]*statistics.Statistic)
+
+	m.db.Where("app_id = ?", appId).Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).Order("created_at DESC").Find(&stats)
+	for _, stat := range stats {
+		statsResponse[stat.CreatedAt.Unix()] = statistics.NewStatisticWithData(appId, 0, stat.PeakConnections, stat.WebsocketMessages, stat.ApiMessages)
+	}
+
+	return statsResponse
 }
