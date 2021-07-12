@@ -3,8 +3,9 @@ package config
 import "errors"
 
 type LarasocketsConfig struct {
-	Apps   []AppConfig
-	Server ServerConfig
+	Apps     []AppConfig
+	Server   ServerConfig
+	Database DatabaseConfig
 }
 
 func (c LarasocketsConfig) Validate() error {
@@ -19,6 +20,10 @@ func (c LarasocketsConfig) Validate() error {
 	}
 
 	if err := c.Server.validate(); err != nil {
+		return err
+	}
+
+	if err := c.Database.validate(); err != nil {
 		return err
 	}
 
@@ -59,6 +64,14 @@ type ServerConfig struct {
 	Certificate string
 }
 
+type DatabaseConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Db       string
+}
+
 func (s ServerConfig) validate() error {
 	if !s.TLS {
 		return nil
@@ -70,6 +83,22 @@ func (s ServerConfig) validate() error {
 
 	if s.Certificate == "" {
 		return errors.New("certificate can not be empty")
+	}
+
+	return nil
+}
+
+func (d DatabaseConfig) validate() error {
+	if d.Host == "" {
+		return errors.New("database host is required")
+	}
+
+	if d.Username == "" {
+		return errors.New("database username is required")
+	}
+
+	if d.Db == "" {
+		return errors.New("database name is required")
 	}
 
 	return nil

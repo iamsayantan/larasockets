@@ -53,7 +53,14 @@ func main() {
 		return
 	}
 
-	dsn := "root:12345@tcp(127.0.0.1:3306)/larasockets?charset=utf8mb4&parseTime=true"
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true",
+		larasocketConfig.Database.Username,
+		larasocketConfig.Database.Password,
+		larasocketConfig.Database.Host,
+		larasocketConfig.Database.Port,
+		larasocketConfig.Database.Db,
+	)
+
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Sprintf("Could not connect to the database: %s", err.Error()))
