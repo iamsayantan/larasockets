@@ -1,11 +1,18 @@
 package statistics
 
+import "time"
+
 type Statistic struct {
 	appId                  string
 	concurrentConnections  int
 	peakConnections        int
 	websocketMessagesCount int
 	apiMessagesCount       int
+}
+
+type StatisticByTime struct {
+	timestamps []int64
+	statistics map[int64]*Statistic
 }
 
 func NewStatistic(appId string) *Statistic {
@@ -19,6 +26,13 @@ func NewStatisticWithData(appId string, concurrentConnections, peakConnections, 
 		peakConnections:        peakConnections,
 		websocketMessagesCount: websocketMessages,
 		apiMessagesCount:       apiMessages,
+	}
+}
+
+func NewStatisticByTime() *StatisticByTime {
+	return &StatisticByTime{
+		timestamps: make([]int64, 0),
+		statistics: make(map[int64]*Statistic, 0),
 	}
 }
 
@@ -89,4 +103,21 @@ func (s *Statistic) GetCurrentSnapshot() map[string]interface{} {
 	stats["api_messages"] = s.apiMessagesCount
 
 	return stats
+}
+
+func (st *StatisticByTime) Set(t time.Time, statistic *Statistic) {
+	st.timestamps = append(st.timestamps, t.Unix())
+	st.statistics[t.Unix()] = statistic
+}
+
+func (st *StatisticByTime) Timestamps() []int64 {
+	return st.timestamps
+}
+
+func (st *StatisticByTime) Get(timestamp int64) *Statistic {
+	if stat, ok := st.statistics[timestamp]; ok {
+		return stat
+	}
+
+	return nil
 }

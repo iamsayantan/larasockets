@@ -101,6 +101,7 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 		r.Post("/apps/{appId}/authorize-channels", dashboardHandler.AuthorizeChannelRequest)
 		r.Post("/apps/{appId}/trigger-events", dashboardHandler.TriggerEvent)
 		r.Get("/apps/{appId}/daily-stats", statsHandler.GetStatForToday)
+		r.Get("/apps/{appId}/graph", statsHandler.GetStatsForGraph)
 	})
 
 	r.Get("/dashboard/apps", dashboardHandler.AllApps)

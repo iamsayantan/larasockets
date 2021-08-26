@@ -51,13 +51,13 @@ func (m *dbStore) DailyStatForApp(appId string) *statistics.Statistic {
 	return statistics.NewStatisticWithData(appId, 0, stats.PeakConnections, stats.WebsocketMessages, stats.ApiMessages)
 }
 
-func (m *dbStore) StatsByTimeRange(appId string, startTime time.Time, endTime time.Time) map[int64]*statistics.Statistic {
+func (m *dbStore) StatsByTimeRange(appId string, startTime time.Time, endTime time.Time) *statistics.StatisticByTime {
 	var stats []LarasocketsStatistic
-	statsResponse := make(map[int64]*statistics.Statistic)
+	statsResponse := statistics.NewStatisticByTime()
 
 	m.db.Where("app_id = ?", appId).Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).Order("created_at DESC").Find(&stats)
 	for _, stat := range stats {
-		statsResponse[stat.CreatedAt.Unix()] = statistics.NewStatisticWithData(appId, 0, stat.PeakConnections, stat.WebsocketMessages, stat.ApiMessages)
+		statsResponse.Set(stat.CreatedAt, statistics.NewStatisticWithData(appId, 0, stat.PeakConnections, stat.WebsocketMessages, stat.ApiMessages))
 	}
 
 	return statsResponse
