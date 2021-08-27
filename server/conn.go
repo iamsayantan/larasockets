@@ -93,7 +93,7 @@ func (c *Connection) Send(data interface{}) {
 		return
 	}
 
-	// c.collector.HandleWebsocketMessage(c.App().Id())
+	c.collector.HandleWebsocketMessage(c.App().Id())
 	c.sendCh <- message
 }
 
@@ -139,6 +139,7 @@ func (c *Connection) Receive() {
 			zap.String("event", pusherMessagePayload.Event),
 		)
 
+		c.collector.HandleWebsocketMessage(c.App().Id())
 		pusherMessage := messages.NewPusherMessage(c, c.hub.channelManger, pusherMessagePayload)
 		pusherMessage.Respond()
 	}

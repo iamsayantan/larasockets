@@ -88,7 +88,7 @@ func NewServer(logger *zap.Logger, cm larasockets.ChannelManager, collector stat
 
 	triggerHandler := handlers.NewTriggerEventHandler(server.channelManager, server.collector, server.logger)
 	dashboardHandler := handlers.NewDashboardHandler(server.channelManager, server.collector)
-	statsHandler := handlers.NewStatsHandler(store)
+	statsHandler := handlers.NewStatsHandler(store, collector)
 
 	authMiddleware := middlewares.NewAuthMiddleware(cm.AppManager())
 

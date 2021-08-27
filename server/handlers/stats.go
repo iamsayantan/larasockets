@@ -9,20 +9,23 @@ import (
 	"time"
 )
 
-func NewStatsHandler(store statistics.StatsStorage) *StatsHandler {
-	return &StatsHandler{statsStore: store}
+func NewStatsHandler(store statistics.StatsStorage, collector statistics.StatsCollector) *StatsHandler {
+	return &StatsHandler{statsStore: store, statsCollector: collector}
 }
 
 type StatsHandler struct {
-	statsStore statistics.StatsStorage
+	statsStore     statistics.StatsStorage
+	statsCollector statistics.StatsCollector
 }
 
 func (h *StatsHandler) GetStatForToday(w http.ResponseWriter, r *http.Request) {
 	stat := h.statsStore.DailyStatForApp(chi.URLParam(r, "appId"))
+	currentStat := h.statsCollector.GetAppStatistics(chi.URLParam(r, "appId"))
 	resp := dto.DailyStatSnapshot{
-		PeakConnections:   stat.PeakConnections(),
-		ApiMessages:       stat.ApiMessages(),
-		WebsocketMessages: stat.WebsocketMessages(),
+		ConcurrentConnection: currentStat.ConcurrentConnections(),
+		PeakConnections:      stat.PeakConnections(),
+		ApiMessages:          stat.ApiMessages(),
+		WebsocketMessages:    stat.WebsocketMessages(),
 	}
 
 	rendering.RenderSuccessWithData(w, "success", http.StatusOK, resp)
@@ -30,7 +33,7 @@ func (h *StatsHandler) GetStatForToday(w http.ResponseWriter, r *http.Request) {
 
 func (h *StatsHandler) GetStatsForGraph(w http.ResponseWriter, r *http.Request) {
 	endTime := time.Now()
-	startTime := endTime.AddDate(0, 0, -1)
+	startTime := endTime.Add(-time.Minute * 30)
 
 	stats := h.statsStore.StatsByTimeRange(chi.URLParam(r, "appId"), startTime, endTime)
 

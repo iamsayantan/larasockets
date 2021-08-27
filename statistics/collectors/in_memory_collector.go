@@ -3,6 +3,7 @@ package collectors
 import (
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/statistics"
+	"github.com/iamsayantan/larasockets/statistics/events"
 	"time"
 )
 
@@ -15,7 +16,6 @@ func NewMemoryCollector(cm larasockets.ChannelManager, store statistics.StatsSto
 		cm:        cm,
 	}
 
-	go collector.sendPeriodicUpdatesToListeners()
 	go collector.periodicDumpToStorage()
 
 	return collector
@@ -36,6 +36,7 @@ func (c *memoryCollector) DumpToStorage(store statistics.StatsStorage) {
 		}
 
 		store.Store(*stat)
+		events.StatisticsUpdated(c.cm, *stat)
 
 		concurrentConnections := c.cm.ConcurrentConnectionsForApp(stat.AppId())
 		stat.Reset(concurrentConnections)
@@ -52,10 +53,12 @@ func (c *memoryCollector) HandleApiMessage(appId string) {
 
 func (c *memoryCollector) HandleConnection(appId string) {
 	c.findOrMake(appId).HandleNewConnection()
+	events.ConcurrentConnectionChanged(c.cm, c.GetAppStatistics(appId))
 }
 
 func (c *memoryCollector) HandleDisconnection(appId string) {
 	c.findOrMake(appId).HandleDisconnection()
+	events.ConcurrentConnectionChanged(c.cm, c.GetAppStatistics(appId))
 }
 
 func (c *memoryCollector) Flush() {
@@ -80,26 +83,8 @@ func (c *memoryCollector) RegisterStatsListener(listener statistics.StatsCollect
 	c.listeners = append(c.listeners, listener)
 }
 
-func (c *memoryCollector) sendUpdatedStatToListeners() {
-	for _, stat := range c.stats {
-		for _, listener := range c.listeners {
-			listener.ListenStatChanged(*stat)
-		}
-	}
-}
-
-func (c *memoryCollector) sendPeriodicUpdatesToListeners() {
-	ticker := time.NewTicker(time.Second * 5)
-	for {
-		select {
-		case <-ticker.C:
-			c.sendUpdatedStatToListeners()
-		}
-	}
-}
-
 func (c *memoryCollector) periodicDumpToStorage() {
-	ticker := time.NewTicker(time.Minute * 5)
+	ticker := time.NewTicker(time.Second * 5)
 	for {
 		select {
 		case <-ticker.C:
