@@ -3,6 +3,7 @@ package channel_managers
 import (
 	"github.com/iamsayantan/larasockets"
 	"github.com/iamsayantan/larasockets/channels"
+	"github.com/iamsayantan/larasockets/events"
 	"go.uber.org/zap"
 )
 
@@ -98,6 +99,14 @@ func (cm *localChannelManager) FindOrCreateChannel(appId, channelName string) la
 func (cm *localChannelManager) SubscribeToChannel(conn larasockets.Connection, channelName string, payload interface{}) {
 	channel := cm.FindOrCreateChannel(conn.App().Id(), channelName)
 	channel.Subscribe(conn, payload)
+
+	// if this is the first connection in the channel, then we can trigger a channel-occupied event.
+	if currentConns := channel.Connections(); len(currentConns) == 1 {
+		events.LogEvent(cm, events.Occupied, events.DashboardLogDetails{
+			AppId:       conn.App().Id(),
+			ChannelName: channelName,
+		})
+	}
 }
 
 func (cm *localChannelManager) UnsubscribeFromChannel(conn larasockets.Connection, channelName string, payload interface{}) {
@@ -108,6 +117,14 @@ func (cm *localChannelManager) UnsubscribeFromChannel(conn larasockets.Connectio
 	}
 
 	channel.UnSubscribe(conn)
+
+	// if there are no  more connections is the channel, then we trigger a channel-vacated event.
+	if currentConns := channel.Connections(); len(currentConns) == 0 {
+		events.LogEvent(cm, events.Vacated, events.DashboardLogDetails{
+			AppId:       conn.App().Id(),
+			ChannelName: channelName,
+		})
+	}
 }
 
 // UnsubscribeFromAllChannels will unsubscribe the connection from all the channels it is subscribed to

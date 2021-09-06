@@ -13,6 +13,8 @@ type EventType string
 const (
 	Connected        EventType = "connected"
 	Disconnected               = "disconnected"
+	Occupied                   = "occupied"
+	Vacated                    = "vacated"
 	Subscribed                 = "subscribed"
 	WebsocketMessage           = "websocket_message"
 	ApiMessage                 = "api_message"
