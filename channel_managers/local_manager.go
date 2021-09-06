@@ -132,5 +132,12 @@ func (cm *localChannelManager) UnsubscribeFromAllChannels(conn larasockets.Conne
 	c := cm.AllChannels(conn.App().Id())
 	for _, channel := range c {
 		channel.UnSubscribe(conn)
+		// if there are no  more connections is the channel, then we trigger a channel-vacated event.
+		if currentConns := channel.Connections(); len(currentConns) == 0 {
+			events.LogEvent(cm, events.Vacated, events.DashboardLogDetails{
+				AppId:       conn.App().Id(),
+				ChannelName: channel.Name(),
+			})
+		}
 	}
 }
