@@ -96,6 +96,26 @@ func (cm *localChannelManager) FindOrCreateChannel(appId, channelName string) la
 	return newChannel
 }
 
+func (cm *localChannelManager) RemoveChannel(appId, channelName string) {
+	channelListForApp, ok := cm.channels[appId]
+	if !ok {
+		return
+	}
+
+	channelDetails := cm.FindChannel(appId, channelName)
+	if channelDetails == nil {
+		return
+	}
+
+	// we should not remove channel if there is anyone connected to it.
+	if connections := channelDetails.Connections(); len(connections) != 0 {
+		return
+	}
+
+	delete(channelListForApp, channelName)
+	cm.channels[appId] = channelListForApp
+}
+
 func (cm *localChannelManager) SubscribeToChannel(conn larasockets.Connection, channelName string, payload interface{}) {
 	channel := cm.FindOrCreateChannel(conn.App().Id(), channelName)
 	channel.Subscribe(conn, payload)
@@ -118,8 +138,9 @@ func (cm *localChannelManager) UnsubscribeFromChannel(conn larasockets.Connectio
 
 	channel.UnSubscribe(conn)
 
-	// if there are no  more connections is the channel, then we trigger a channel-vacated event.
+	// if there are no  more connections is the channel, then remove the channel from memory.
 	if currentConns := channel.Connections(); len(currentConns) == 0 {
+		cm.RemoveChannel(conn.App().Id(), channelName)
 		events.LogEvent(cm, events.Vacated, events.DashboardLogDetails{
 			AppId:       conn.App().Id(),
 			ChannelName: channelName,
@@ -131,13 +152,7 @@ func (cm *localChannelManager) UnsubscribeFromChannel(conn larasockets.Connectio
 func (cm *localChannelManager) UnsubscribeFromAllChannels(conn larasockets.Connection) {
 	c := cm.AllChannels(conn.App().Id())
 	for _, channel := range c {
+		cm.UnsubscribeFromChannel(conn, channel.Name(), struct{}{})
 		channel.UnSubscribe(conn)
-		// if there are no  more connections is the channel, then we trigger a channel-vacated event.
-		if currentConns := channel.Connections(); len(currentConns) == 0 {
-			events.LogEvent(cm, events.Vacated, events.DashboardLogDetails{
-				AppId:       conn.App().Id(),
-				ChannelName: channel.Name(),
-			})
-		}
 	}
 }

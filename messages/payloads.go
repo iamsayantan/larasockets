@@ -16,6 +16,12 @@ type PusherSubscriptionPayload struct {
 	ChannelData string `json:"channel_data"`
 }
 
+// PusherUnsubscribePayload represents the payload for channel unsubscribe request.
+type PusherUnsubscribePayload struct {
+	// Channel is the name of the channel being unsubscribed to
+	Channel string `json:"channel"`
+}
+
 // PusherEventPayload is the payload structure for events that are received from the application servers
 type PusherEventPayload struct {
 	// Channel is the name of the channel where the event needs to be delivered

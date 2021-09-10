@@ -19,6 +19,8 @@ func (p *pusherChannelProtocolMessage) Respond() {
 	switch eventName {
 	case "subscribe":
 		p.handleSubscription()
+	case "unsubscribe":
+		p.handleUnSubscribe()
 	case "ping":
 		p.handlePing()
 	}
@@ -32,6 +34,15 @@ func (p *pusherChannelProtocolMessage) handleSubscription() {
 	}
 
 	p.channelManager.SubscribeToChannel(p.connection, payload.Channel, payload)
+}
+
+func (p *pusherChannelProtocolMessage) handleUnSubscribe() {
+	var payload PusherUnsubscribePayload
+	if err := json.Unmarshal(p.payload.Data, &payload); err != nil {
+		return
+	}
+
+	p.channelManager.UnsubscribeFromChannel(p.connection, payload.Channel, payload)
 }
 
 func (p *pusherChannelProtocolMessage) handlePing() {
